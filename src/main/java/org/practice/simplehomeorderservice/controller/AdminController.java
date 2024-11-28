@@ -74,21 +74,6 @@ public class AdminController {
         return adminDisplayService.findAllUserByEmailDesc().stream().map(mapperUtil::convertToDto).toList();
     }
 
-    @GetMapping("admin/user/role/customer")
-    List<UserDto> displayByCustomerRole() {
-        return adminDisplayService.searchUsers(null, null, null, null, null, Role.CUSTOMER, null, null)
-                .stream()
-                .map(mapperUtil::convertToDto)
-                .toList();
-    }
-
-    @GetMapping("admin/user/role/specialist")
-    List<UserDto> displayBySpecialistRole() {
-        return adminDisplayService.searchUsers(null, null, null, null, null, Role.SPECIALIST, null, null)
-                .stream()
-                .map(mapperUtil::convertToDto)
-                .toList();
-    }
 
     @GetMapping("admin/specialist/ASC/{subTaskName}")
     List<SpecialistDto> displayBySubTaskAndScoreASC(@PathVariable String subTaskName) {
