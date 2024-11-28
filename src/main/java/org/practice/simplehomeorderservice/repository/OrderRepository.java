@@ -5,6 +5,7 @@ import org.practice.simplehomeorderservice.entities.Customer;
 import org.practice.simplehomeorderservice.entities.Order;
 import org.practice.simplehomeorderservice.entities.SubTask;
 import org.practice.simplehomeorderservice.enumerations.OrderStatus;
+import org.practice.simplehomeorderservice.specification.OrderSpecification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer>, JpaSpeci
 
     @Query("SELECT o FROM Order o WHERE o.status = :status")
     List<Order> findOrderByOrderStatus(@Param("status") OrderStatus status);
+
+    List<Order> findAll(OrderSpecification orderSpecification);
 }
