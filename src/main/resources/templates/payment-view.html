@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Information</title>
+    <style>
+        body {
+            background-color: #f2f2f2;
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .payment-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(169, 169, 169, 0.5);
+            max-width: 400px;
+            padding: 20px;
+            text-align: right;
+        }
+        .header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            text-align: left;
+        }
+        .form-control.short {
+            width: 45%;
+            margin-right: 5px;
+        }
+        .btn-pay {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            font-size: 1rem;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-pay:hover {
+            background-color: #218838;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .timer {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #777;
+            margin-bottom: 10px;
+        }
+        #reload-captcha {
+            background-color: #eee;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="payment-card">
+    <div class="header">Payment Page</div>
+    <div class="timer">Time : <span id="timer">10:00</span></div>
+    <form id="payment-form" autocomplete="off">
+        <input type="hidden" name="invoiceId" id="invoiceId" value="12345">
+        <div class="error" id="error"></div>
+
+        <div class="form-group">
+            <label for="cardNumber">Card Number</label>
+            <input type="text" class="form-control" id="cardNumber" maxlength="16" placeholder="16 Digit Card Number" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cvv2">CVV2</label>
+            <input type="text" class="form-control" id="cvv2" maxlength="4" placeholder="CVV2" required>
+        </div>
+
+        <div class="form-group">
+            <label>Expiration Date</label>
+            <div style="display: flex; gap: 10px;">
+                <label for="expiryMonth"></label><input type="text" class="form-control short" id="expiryMonth" maxlength="2" placeholder="MM" required>
+                <label for="expiryYear"></label><input type="text" class="form-control short" id="expiryYear" maxlength="2" placeholder="YY" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="captcha">Security Code</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="text" class="form-control" id="captcha" maxlength="4" placeholder="Code" required>
+                <button type="button" id="reload-captcha" onclick="refreshCaptcha()">↺</button>
+                <img id="captchaImage" src="http://localhost:8080/api/payments/captcha" alt="Security Code" style="cursor: pointer;">
+            </div>
+        </div>
+
+        <button type="submit" class="btn-pay">Pay</button>
+    </form>
+</div>
+
+<script>
+    function refreshCaptcha() {
+        document.getElementById('captchaImage').src = 'http://localhost:8080/api/payments/captcha?' + new Date().getTime();
+    }
+
+    let time = 600;
+    const timerElement = document.getElementById('timer');
+    const interval = setInterval(() => {
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        timerElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        time--;
+
+        if (time < 0) {
+            clearInterval(interval);
+            alert("Your time is up. Please Try Again Later");
+            location.reload();
+        }
+    }, 1000);
+
+    document.getElementById('payment-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        document.getElementById("error").innerHTML = "";
+
+        const cardNumber = document.getElementById('cardNumber').value.replace(/\s+/g, '');
+        const cvv2 = document.getElementById('cvv2').value;
+        const expiryMonth = document.getElementById('expiryMonth').value;
+        const expiryYear = document.getElementById('expiryYear').value;
+        const captcha = document.getElementById('captcha').value;
+        const invoiceId = document.getElementById('invoiceId').value;
+
+        console.log(JSON.stringify({
+            cardNumber: cardNumber,
+            expiryMonth: expiryMonth,
+            expiryYear: expiryYear,
+            cvv2: cvv2,
+            invoiceId: invoiceId,
+            captcha: captcha
+        }));
+
+        fetch("http://localhost:8080/api/payments/pay-online", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cardNumber: cardNumber,
+                expiryMonth: expiryMonth,
+                expiryYear: expiryYear,
+                cvv2: cvv2,
+                invoiceId: invoiceId,
+                captcha: captcha
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text()
+                        .then(errorMessage => {
+                            document.getElementById("error").innerHTML = errorMessage;
+                        });
+                } else {
+                    alert("Payment Has Been Successful!");
+                    window.location.href = "payment-success.html";
+                    return response.json();
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+    });
+</script>
+</body>
+</html>
